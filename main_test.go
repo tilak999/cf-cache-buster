@@ -28,7 +28,7 @@ func TestDemo(t *testing.T) {
 	}
 
 	recorder := httptest.NewRecorder()
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost/ping", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

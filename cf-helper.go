@@ -8,11 +8,11 @@ import (
 )
 
 // PurgeCache Purge cloudflare cache.
-func PurgeCache(config *Config, _ map[string]string, logger *log.Logger) {
+func PurgeCache(config *Config, host string, logger *log.Logger) {
 	urlTemplate := "https://api.cloudflare.com/client/v4/zones/$zoneId/purge_cache"
 	url := strings.Replace(urlTemplate, "$zoneId", config.CloudflareZone, 1)
 
-	payload := strings.NewReader("{\n  \"purge_everything\": true\n}")
+	payload := strings.NewReader("{\"hosts\": [\"" + host + "\"]}")
 
 	req, err := http.NewRequest(http.MethodPost, url, payload)
 	if err != nil {

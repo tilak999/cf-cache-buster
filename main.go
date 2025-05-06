@@ -92,6 +92,6 @@ func (a *HeaderDetectionPlugin) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 				a.logger.Printf("%s=%s", k, v)
 			}
 		}
-		go PurgeCache(a.config, customRW.DetectedHeaders, a.logger)
+		go PurgeCache(a.config, req.Host, a.logger)
 	}
 }
