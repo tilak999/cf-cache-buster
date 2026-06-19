@@ -1,4 +1,5 @@
-// Package traefikplugin a demo plugin.
+// Package traefikplugin a Traefik middleware plugin that detects specific
+// response headers and triggers Cloudflare cache purge.
 package traefikplugin
 
 import (
@@ -8,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 // Config the plugin configuration.
@@ -28,7 +30,8 @@ func CreateConfig() *Config {
 	}
 }
 
-// HeaderDetectionPlugin a HeaderDetectionPlugin plugin.
+// HeaderDetectionPlugin is a Traefik middleware plugin that detects
+// configured response headers and purges Cloudflare cache when found.
 type HeaderDetectionPlugin struct {
 	config *Config
 	next   http.Handler
@@ -36,27 +39,26 @@ type HeaderDetectionPlugin struct {
 	name   string
 }
 
-// CustomResponseWriter Custom response writer.
-type CustomResponseWriter struct {
+// customResponseWriter wraps http.ResponseWriter to intercept headers
+// before they are written to the client.
+type customResponseWriter struct {
 	http.ResponseWriter
-	*HeaderDetectionPlugin
-	URL             string            `json:"url,omitempty"`
-	DetectedHeaders map[string]string `json:"detectedHeaders,omitempty"`
+	plugin          *HeaderDetectionPlugin
+	detectedHeaders map[string]string
 }
 
-// New created a new Demo plugin.
+// New creates a new HeaderDetectionPlugin instance.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
-	logger := log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime)
-
 	if len(config.Headers) == 0 {
 		return nil, errors.New("headers cannot be empty")
 	}
 
-	if config.CloudflareToken == "" || config.CloudflareZone == "" {
-		return nil, fmt.Errorf("cloudflare zone or token is not defined, zone=%s | token=%s",
+	if strings.TrimSpace(config.CloudflareZone) == "" || strings.TrimSpace(config.CloudflareToken) == "" {
+		return nil, fmt.Errorf("cloudflare zone or token is not defined, zone=%q | token=%q",
 			config.CloudflareZone, config.CloudflareToken)
 	}
 
+	logger := log.New(os.Stdout, fmt.Sprintf("[traefikplugin:%s] ", name), log.Ldate|log.Ltime)
 	logger.Println("Plugin initialized, ready to accept connections.")
 
 	return &HeaderDetectionPlugin{
@@ -67,31 +69,34 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	}, nil
 }
 
-// WriteHeader captures headers before they're written.
-func (crw *CustomResponseWriter) WriteHeader(code int) {
-	for _, header := range crw.config.Headers {
+// WriteHeader captures configured headers from the upstream response
+// before writing the status code to the client.
+func (crw *customResponseWriter) WriteHeader(code int) {
+	for _, header := range crw.plugin.config.Headers {
 		value := crw.ResponseWriter.Header().Get(header)
 		if value != "" {
-			crw.DetectedHeaders[header] = value
+			crw.detectedHeaders[header] = value
 		}
 	}
 	crw.ResponseWriter.WriteHeader(code)
 }
 
 func (a *HeaderDetectionPlugin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	customRW := &CustomResponseWriter{
-		ResponseWriter:        rw,
-		HeaderDetectionPlugin: a,
-		DetectedHeaders:       make(map[string]string),
+	crw := &customResponseWriter{
+		ResponseWriter:  rw,
+		plugin:          a,
+		detectedHeaders: make(map[string]string),
 	}
-	a.next.ServeHTTP(customRW, req)
-	if len(customRW.DetectedHeaders) > 0 {
+
+	a.next.ServeHTTP(crw, req)
+
+	if len(crw.detectedHeaders) > 0 {
 		a.logger.Printf("req [host:%s][path:%s]", req.Host, req.URL.Path)
 		if a.config.DryRun {
-			for k, v := range customRW.DetectedHeaders {
-				a.logger.Printf("%s=%s", k, v)
+			for k, v := range crw.detectedHeaders {
+				a.logger.Printf("  %s=%s", k, v)
 			}
 		}
-		go PurgeCache(a.config, req.Host, a.logger)
+		go PurgeCache(req.Context(), a.config, req.Host, a.logger)
 	}
 }

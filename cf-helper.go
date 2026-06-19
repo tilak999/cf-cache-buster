@@ -1,45 +1,59 @@
 package traefikplugin
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"strings"
+	"time"
 )
 
-// PurgeCache Purge cloudflare cache.
-func PurgeCache(config *Config, host string, logger *log.Logger) {
-	urlTemplate := "https://api.cloudflare.com/client/v4/zones/$zoneId/purge_cache"
-	url := strings.Replace(urlTemplate, "$zoneId", config.CloudflareZone, 1)
+var httpClient = &http.Client{
+	Timeout: 10 * time.Second,
+}
 
-	payload := strings.NewReader("{\"hosts\": [\"" + host + "\"]}")
+// purgeRequest represents the Cloudflare cache purge API request body.
+type purgeRequest struct {
+	Hosts []string `json:"hosts"`
+}
 
-	req, err := http.NewRequest(http.MethodPost, url, payload)
+// PurgeCache purges Cloudflare cache for the given host.
+func PurgeCache(ctx context.Context, config *Config, host string, logger *log.Logger) {
+	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/purge_cache", config.CloudflareZone)
+
+	payload, err := json.Marshal(purgeRequest{Hosts: []string{host}})
 	if err != nil {
-		logger.Println(err)
+		logger.Printf("failed to marshal purge request: %v", err)
 		return
 	}
 
-	authToken := strings.Replace("Bearer $token", "$token", config.CloudflareToken, 1)
-	req.Header.Add("Authorization", authToken)
-	req.Header.Add("Content-Type", "application/json")
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(string(payload)))
+	if err != nil {
+		logger.Printf("failed to create purge request: %v", err)
+		return
+	}
 
-	res, err1 := http.DefaultClient.Do(req)
-	if err1 != nil {
-		logger.Println(err1)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.CloudflareToken))
+	req.Header.Set("Content-Type", "application/json")
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		logger.Printf("purge request failed: %v", err)
 		return
 	}
 
 	defer func() {
-		err := res.Body.Close()
-		if err != nil {
-			log.Fatal(err)
+		if cerr := res.Body.Close(); cerr != nil {
+			logger.Printf("failed to close response body: %v", cerr)
 		}
 	}()
 
-	body, err2 := io.ReadAll(res.Body)
-	if err2 != nil {
-		logger.Println(err2)
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		logger.Printf("failed to read purge response: %v", err)
 		return
 	}
 
@@ -51,6 +65,6 @@ func PurgeCache(config *Config, host string, logger *log.Logger) {
 		return
 	}
 
-	logger.Printf("Request completed with status != 200: actual status [%d]", res.StatusCode)
+	logger.Printf("purge request failed with status %d %s", res.StatusCode, http.StatusText(res.StatusCode))
 	logger.Println(string(body))
 }

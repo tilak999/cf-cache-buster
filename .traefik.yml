@@ -3,9 +3,11 @@ type: middleware
 iconPath: .assets/icon.png
 
 import: github.com/tilak999/traefikplugin
-summary: 'Execute Cloudflare purge when response contains x-invalidate-cache header'
+summary: Execute Cloudflare purge when response contains x-invalidate-cache header
 
 testData:
+  cloudflarezone: test-zone-id
+  cloudflaretoken: test-api-token
   headers: 
     - content-type
     - Content-Length
