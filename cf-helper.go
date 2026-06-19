@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const purgeTimeout = 10 * time.Second
+const purgeTimeout = 20 * time.Second
 
 // purgeRequest represents the Cloudflare cache purge API request body.
 type purgeRequest struct {
