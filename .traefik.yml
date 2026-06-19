@@ -2,7 +2,7 @@ displayName: Cache Purge Plugin
 type: middleware
 iconPath: .assets/icon.png
 
-import: github.com/tilak999/traefikplugin
+import: github.com/tilak999/cf-cache-buster
 summary: Execute Cloudflare purge when response contains x-invalidate-cache header
 
 testData:

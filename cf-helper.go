@@ -1,4 +1,4 @@
-package traefikplugin
+package cachebuster
 
 import (
 	"context"

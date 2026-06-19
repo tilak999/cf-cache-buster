@@ -1,6 +1,6 @@
-// Package traefikplugin a Traefik middleware plugin that detects specific
+// Package cachebuster a Traefik middleware plugin that detects specific
 // response headers and triggers Cloudflare cache purge.
-package traefikplugin
+package cachebuster
 
 import (
 	"context"
@@ -58,7 +58,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 			config.CloudflareZone, config.CloudflareToken)
 	}
 
-	logger := log.New(os.Stdout, fmt.Sprintf("[traefikplugin:%s] ", name), log.Ldate|log.Ltime)
+	logger := log.New(os.Stdout, fmt.Sprintf("[cf-cache-buster:%s] ", name), log.Ldate|log.Ltime)
 	logger.Println("Plugin initialized, ready to accept connections.")
 
 	return &HeaderDetectionPlugin{

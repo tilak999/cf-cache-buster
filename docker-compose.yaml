@@ -7,7 +7,7 @@ services:
       - "--providers.file.watch=true"
       - "--providers.docker=true"
       - "--providers.docker.exposedbydefault=false"
-      - "--experimental.localPlugins.headerDetection.modulename=github.com/tilak999/traefikplugin"
+      - "--experimental.localPlugins.headerDetection.modulename=github.com/tilak999/cf-cache-buster"
       #- "--experimental.plugins.myheaderplugin.version=v0.0.7"
       - "--entrypoints.web.address=:80"
     ports:
@@ -16,7 +16,7 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./config:/config
-      - ./:/plugins-local/src/github.com/tilak999/traefikplugin
+      - ./:/plugins-local/src/github.com/tilak999/cf-cache-buster
 
   whoami:
     image: traefik/whoami

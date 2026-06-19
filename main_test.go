@@ -1,4 +1,4 @@
-package traefikplugin_test
+package cachebuster_test
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	plugin "github.com/tilak999/traefikplugin"
+	plugin "github.com/tilak999/cf-cache-buster"
 )
 
 func TestHeaderDetection(t *testing.T) {

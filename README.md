@@ -1,6 +1,6 @@
 # Traefik Cache Purge Plugin
 
-[![Build Status](https://github.com/tilak999/traefikplugin/workflows/Main/badge.svg?branch=master)](https://github.com/tilak999/traefikplugin/actions)
+[![Build Status](https://github.com/tilak999/cf-cache-buster/workflows/Main/badge.svg?branch=master)](https://github.com/tilak999/cf-cache-buster/actions)
 ![Go Version](https://img.shields.io/badge/go-%3E%3D1.22-blue)
 
 A [Traefik](https://traefik.io) middleware plugin that detects specific response headers from your backend and automatically triggers a [Cloudflare cache purge](https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-hostname/) for the requested host.
@@ -40,7 +40,7 @@ Add the plugin to your Traefik **static configuration**:
 experimental:
   plugins:
     cachePurge:
-      moduleName: github.com/tilak999/traefikplugin
+      moduleName: github.com/tilak999/cf-cache-buster
       version: v0.0.7  # Use the latest tag
 ```
 
@@ -119,7 +119,7 @@ make lint
 To test with Traefik locally, place the plugin source at:
 
 ```
-./plugins-local/src/github.com/tilak999/traefikplugin/
+./plugins-local/src/github.com/tilak999/cf-cache-buster/
 ```
 
 And use the local plugin configuration:
@@ -129,7 +129,7 @@ And use the local plugin configuration:
 experimental:
   localPlugins:
     headerDetection:
-      moduleName: github.com/tilak999/traefikplugin
+      moduleName: github.com/tilak999/cf-cache-buster
 ```
 
 The included `docker-compose.yaml` handles this automatically by volume-mounting the project directory.
