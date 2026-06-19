@@ -58,8 +58,8 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 			config.CloudflareZone, config.CloudflareToken)
 	}
 
-	logger := log.New(os.Stdout, fmt.Sprintf("[cf-cache-buster:%s] ", name), log.Ldate|log.Ltime)
-	logger.Println("Plugin initialized, ready to accept connections.")
+	logger := log.New(os.Stdout, "[cf-cache-buster] ", log.Ldate|log.Ltime)
+	logger.Printf("Plugin %s initialized, ready to accept connections.\n", name)
 
 	return &HeaderDetectionPlugin{
 		config: config,
