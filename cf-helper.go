@@ -3,7 +3,6 @@ package traefikplugin
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,9 +10,7 @@ import (
 	"time"
 )
 
-var httpClient = &http.Client{
-	Timeout: 10 * time.Second,
-}
+const purgeTimeout = 10 * time.Second
 
 // purgeRequest represents the Cloudflare cache purge API request body.
 type purgeRequest struct {
@@ -22,7 +19,9 @@ type purgeRequest struct {
 
 // PurgeCache purges Cloudflare cache for the given host.
 func PurgeCache(ctx context.Context, config *Config, host string, logger *log.Logger) {
-	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/purge_cache", config.CloudflareZone)
+	httpClient := &http.Client{Timeout: purgeTimeout}
+
+	url := "https://api.cloudflare.com/client/v4/zones/" + config.CloudflareZone + "/purge_cache"
 
 	payload, err := json.Marshal(purgeRequest{Hosts: []string{host}})
 	if err != nil {
@@ -36,7 +35,7 @@ func PurgeCache(ctx context.Context, config *Config, host string, logger *log.Lo
 		return
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.CloudflareToken))
+	req.Header.Set("Authorization", "Bearer "+config.CloudflareToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := httpClient.Do(req)
