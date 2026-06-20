@@ -1,4 +1,4 @@
-package cachebuster_test
+package cf_cache_buster_test
 
 import (
 	"context"

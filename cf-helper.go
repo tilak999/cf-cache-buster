@@ -1,4 +1,4 @@
-package cachebuster
+package cf_cache_buster
 
 import (
 	"context"

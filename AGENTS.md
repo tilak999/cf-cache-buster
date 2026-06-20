@@ -60,7 +60,7 @@ These are **mandatory** for the plugin to be loadable by Traefik/Yaegi:
   - `func CreateConfig() *Config`
   - `func New(ctx context.Context, next http.Handler, config *Config, name string) (http.Handler, error)`
 - **No external dependencies** — Yaegi can only interpret stdlib. All imports must be from the Go standard library.
-- The `go.mod` must exist at the repo root with the correct module path (`github.com/tilak999/cf-cache-buster`). The Go package name is `cachebuster`.
+- The `go.mod` must exist at the repo root with the correct module path (`github.com/tilak999/cf-cache-buster`). The Go package name is `cf_cache_buster`.
 - Dependencies, if any, must be vendored (though currently there are none).
 
 ### Go Style
@@ -100,6 +100,6 @@ Cross-platform test matrix across Ubuntu, macOS, and Windows with Go 1.22 and la
 ## Testing
 
 - Tests are in `main_test.go` using `httptest.NewRecorder`.
-- The test package is `cachebuster_test` (external test package).
+- The test package is `cf_cache_buster_test` (external test package).
 - Tests cover: header detection, empty config errors, missing credentials, no-match scenarios, and status code proxying.
 - The `PurgeCache` function makes real HTTP calls to Cloudflare — tests that trigger it use dummy credentials that will fail silently.

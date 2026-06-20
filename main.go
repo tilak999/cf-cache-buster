@@ -1,6 +1,6 @@
-// Package cachebuster a Traefik middleware plugin that detects specific
+// Package cf_cache_buster a Traefik middleware plugin that detects specific
 // response headers and triggers Cloudflare cache purge.
-package cachebuster
+package cf_cache_buster
 
 import (
 	"context"
