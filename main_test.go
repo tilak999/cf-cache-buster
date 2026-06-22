@@ -188,8 +188,8 @@ func TestConcurrentRequests(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Fire multiple concurrent requests
-	for range 10 {
+	//nolint:intrange
+	for i := 0; i < 10; i++ {
 		go func() {
 			recorder := httptest.NewRecorder()
 			req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost/test", nil)
