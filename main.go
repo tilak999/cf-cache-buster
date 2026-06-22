@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 )
 
 // Config the plugin configuration.
@@ -30,10 +31,11 @@ func CreateConfig() *Config {
 
 // HeaderDetectionPlugin a HeaderDetectionPlugin plugin.
 type HeaderDetectionPlugin struct {
-	config *Config
-	next   http.Handler
-	logger *log.Logger
-	name   string
+	config       *Config
+	next         http.Handler
+	logger       *log.Logger
+	name         string
+	debouncer    *Debouncer
 }
 
 // CustomResponseWriter Custom response writer.
@@ -60,10 +62,11 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 	logger.Println("Plugin initialized, ready to accept connections.")
 
 	return &HeaderDetectionPlugin{
-		config: config,
-		logger: logger,
-		next:   next,
-		name:   name,
+		config:    config,
+		logger:    logger,
+		next:      next,
+		name:      name,
+		debouncer: NewDebouncer(5 * time.Second),
 	}, nil
 }
 
@@ -76,6 +79,19 @@ func (crw *CustomResponseWriter) WriteHeader(code int) {
 		}
 	}
 	crw.ResponseWriter.WriteHeader(code)
+}
+
+// Purge debounces and purges host.
+func (a *HeaderDetectionPlugin) Purge(host string) {
+	a.debouncer.Run(func() {
+		hosts := []string{host}
+		defer func() {
+			if r := recover(); r != nil {
+				a.logger.Printf("panic in PurgeCache recovered: %v", r)
+			}
+		}()
+		PurgeCache(a.config, hosts, a.logger)
+	})
 }
 
 func (a *HeaderDetectionPlugin) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
@@ -93,14 +109,7 @@ func (a *HeaderDetectionPlugin) ServeHTTP(rw http.ResponseWriter, req *http.Requ
 			}
 		}
 		if a.config.CloudflareToken != "" && a.config.CloudflareZone != "" {
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						a.logger.Printf("panic in PurgeCache recovered: %v", r)
-					}
-				}()
-				PurgeCache(a.config, req.Host, a.logger)
-			}()
+			a.Purge(req.Host)
 		} else {
 			a.logger.Println("Cloudflare credentials missing; skipping cache purge")
 		}

@@ -9,27 +9,27 @@ A [Traefik](https://traefik.io) middleware plugin that detects specific response
 
 ```
 Client → Traefik → [This Plugin] → Backend
-                         │
-                         ├─ Intercepts the response
-                         ├─ Checks for configured headers
-                         └─ If found → async Cloudflare cache purge
+                      ├─ Intercepts the response
+                      ├─ Checks for configured headers
+                      └─ If found → debounced → Cloudflare cache purge
 ```
 
 1. A request passes through Traefik to your backend service.
 2. The plugin inspects the **response headers** from the backend.
-3. If any of the configured headers are present, the plugin fires an **asynchronous** Cloudflare API call to purge the cache for that host.
-4. The response is passed through to the client unmodified.
+3. If any of the configured headers are present, the plugin queues the request host for purging.
+4. The purge process is **debounced** (defaulting to a 5-second window).
+5. The response is passed through to the client unmodified.
 
 This is useful when your backend signals that content has changed (e.g., via an `x-invalidate-cache` header) and the CDN cache should be refreshed.
 
 ## Configuration Reference
 
-| Field             | Type       | Required | Default | Description                                                                 |
-|-------------------|------------|----------|---------|-----------------------------------------------------------------------------|
-| `headers`         | `[]string` | ✅       | `[]`    | Response headers to watch for. If any are present, a cache purge is fired.  |
-| `cloudflarezone`  | `string`   | ✅       | `""`    | Your Cloudflare Zone ID.                                                    |
-| `cloudflaretoken` | `string`   | ✅       | `""`    | Cloudflare API token with cache purge permissions.                          |
-| `dryrun`          | `bool`     | ❌       | `false` | When `true`, logs detected headers and API responses without suppressing purge. Useful for debugging. |
+| Field | Type | Default | Description |
+|---|---|---|---|
+| `headers` | `[]string` | | **Required.** Response headers to watch. |
+| `cloudflarezone` | `string` | | **Required.** Cloudflare Zone ID. |
+| `cloudflaretoken` | `string` | | **Required.** Cloudflare API Token. |
+| `dryrun` | `bool` | `false` | Enable dry-run logging. |
 
 ## Installation
 
