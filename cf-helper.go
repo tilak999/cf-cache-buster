@@ -16,6 +16,7 @@ type purgePayload struct {
 }
 
 // purgeClient returns an HTTP client with a timeout for Cloudflare API calls.
+//nolint:gochecknoglobals // safe for concurrent use and reuses connections
 var purgeClient = &http.Client{Timeout: 10 * time.Second}
 
 // PurgeCache Purge cloudflare cache for the specified hosts.
@@ -34,7 +35,7 @@ func PurgeCache(config *Config, hosts []string, logger *log.Logger) {
 		return
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.CloudflareToken))
+	req.Header.Set("Authorization", "Bearer "+config.CloudflareToken)
 	req.Header.Set("Content-Type", "application/json")
 
 	res, err := purgeClient.Do(req)

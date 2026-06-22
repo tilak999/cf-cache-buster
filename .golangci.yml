@@ -49,7 +49,8 @@ issues:
   exclude-use-default: false
   max-per-linter: 0
   max-same-issues: 0
-  exclude: []
+  exclude:
+    - "don't use an underscore in package name"
   exclude-rules:
     - path: (.+)_test.go
       linters:

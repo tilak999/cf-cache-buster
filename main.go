@@ -46,6 +46,8 @@ type CustomResponseWriter struct {
 	DetectedHeaders map[string]string `json:"detectedHeaders,omitempty"`
 }
 
+const debounceDuration = 5 * time.Second
+
 // New created a new Demo plugin.
 func New(_ context.Context, next http.Handler, config *Config, name string) (http.Handler, error) {
 	logger := log.New(os.Stdout, "DEBUG: ", log.Ldate|log.Ltime)
@@ -66,7 +68,7 @@ func New(_ context.Context, next http.Handler, config *Config, name string) (htt
 		logger:    logger,
 		next:      next,
 		name:      name,
-		debouncer: NewDebouncer(5 * time.Second),
+		debouncer: NewDebouncer(debounceDuration),
 	}, nil
 }
 

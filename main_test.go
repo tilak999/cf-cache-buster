@@ -1,3 +1,5 @@
+//go:build test
+
 package cf_cache_buster_test
 
 import (
@@ -69,7 +71,7 @@ func TestNewFailsWithEmptyHeaders(t *testing.T) {
 	// Headers left empty
 
 	ctx := context.Background()
-	next := http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {})
+	next := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 
 	_, err := plugin.New(ctx, next, cfg, "demo-plugin")
 	if err == nil {
@@ -187,7 +189,7 @@ func TestConcurrentRequests(t *testing.T) {
 	}
 
 	// Fire multiple concurrent requests
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		go func() {
 			recorder := httptest.NewRecorder()
 			req, _ := http.NewRequestWithContext(ctx, http.MethodGet, "http://localhost/test", nil)
