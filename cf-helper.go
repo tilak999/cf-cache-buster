@@ -1,69 +1,67 @@
 package cf_cache_buster
 
 import (
-	"context"
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
-	"strings"
 	"time"
+	cb "github.com/tilak999/cf-cache-buster/lib"
 )
 
-const purgeTimeout = 20 * time.Second
-
-// purgeRequest represents the Cloudflare cache purge API request body.
-type purgeRequest struct {
+// purgePayload is the JSON body for the Cloudflare purge API.
+type purgePayload struct {
 	Hosts []string `json:"hosts"`
 }
 
-// PurgeCache purges Cloudflare cache for the given host.
-func PurgeCache(ctx context.Context, config *Config, host string, logger *log.Logger) {
-	httpClient := &http.Client{Timeout: purgeTimeout}
+// purgeClient returns an HTTP client with a timeout for Cloudflare API calls.
+var purgeClient = &http.Client{Timeout: 10 * time.Second}
 
-	url := "https://api.cloudflare.com/client/v4/zones/" + config.CloudflareZone + "/purge_cache"
+// PurgeCache Purge cloudflare cache.
+func PurgeCache(config *Config, host string, logger *log.Logger) {
+	debouncer := cb.NewDebouncer(5 * time.Second)
+	url := fmt.Sprintf("https://api.cloudflare.com/client/v4/zones/%s/purge_cache", config.CloudflareZone)
 
-	payload, err := json.Marshal(purgeRequest{Hosts: []string{host}})
+	payload, err := json.Marshal(purgePayload{Hosts: []string{host}})
 	if err != nil {
-		logger.Printf("failed to marshal purge request: %v", err)
+		logger.Printf("failed to marshal purge payload: %v", err)
 		return
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, strings.NewReader(string(payload)))
+	req, err := http.NewRequest(http.MethodPost, url, bytes.NewReader(payload))
 	if err != nil {
-		logger.Printf("failed to create purge request: %v", err)
+		logger.Println(err)
 		return
 	}
 
-	req.Header.Set("Authorization", "Bearer "+config.CloudflareToken)
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", config.CloudflareToken))
 	req.Header.Set("Content-Type", "application/json")
 
-	res, err := httpClient.Do(req)
-	if err != nil {
-		logger.Printf("purge request failed: %v", err)
-		return
-	}
-
-	defer func() {
-		if cerr := res.Body.Close(); cerr != nil {
-			logger.Printf("failed to close response body: %v", cerr)
+	debouncer.Run(func() {
+		res, err := purgeClient.Do(req)
+		if err != nil {
+			logger.Println(err)
+			return
 		}
-	}()
+		defer res.Body.Close()
 
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		logger.Printf("failed to read purge response: %v", err)
-		return
-	}
-
-	if res.StatusCode == http.StatusOK {
-		logger.Print("Cloudflare cache purged: OK")
-		if config.DryRun {
-			logger.Println(string(body))
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			logger.Println(err)
+			return
 		}
-		return
-	}
 
-	logger.Printf("purge request failed with status %d %s", res.StatusCode, http.StatusText(res.StatusCode))
-	logger.Println(string(body))
+		if res.StatusCode == http.StatusOK {
+			logger.Print("Cloudflare cache purged: OK")
+			if config.DryRun {
+				logger.Println(string(body))
+			}
+			return
+		}
+
+		logger.Printf("Request completed with status != 200: actual status [%d]", res.StatusCode)
+		logger.Println(string(body))
+	})
 }
