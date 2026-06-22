@@ -51,6 +51,7 @@ issues:
   max-same-issues: 0
   exclude:
     - "don't use an underscore in package name"
+    - "should not use underscores in package names"
   exclude-rules:
     - path: (.+)_test.go
       linters:

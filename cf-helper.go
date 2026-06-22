@@ -15,9 +15,11 @@ type purgePayload struct {
 	Hosts []string `json:"hosts"`
 }
 
-// purgeClient returns an HTTP client with a timeout for Cloudflare API calls.
-//nolint:gochecknoglobals // safe for concurrent use and reuses connections
-var purgeClient = &http.Client{Timeout: 10 * time.Second}
+//nolint:gochecknoglobals // timeout duration
+var timeoutDuration = 10 * time.Second
+
+//nolint:gochecknoglobals // client for concurrent use and reuses connections
+var purgeClient = &http.Client{Timeout: timeoutDuration}
 
 // PurgeCache Purge cloudflare cache for the specified hosts.
 func PurgeCache(config *Config, hosts []string, logger *log.Logger) {
@@ -40,10 +42,14 @@ func PurgeCache(config *Config, hosts []string, logger *log.Logger) {
 
 	res, err := purgeClient.Do(req)
 	if err != nil {
-		logger.Println(err)
+		logger.Printf("failed to purge cache: %v", err)
 		return
 	}
-	defer res.Body.Close()
+	defer func() {
+		if closeErr := res.Body.Close(); closeErr != nil {
+			logger.Printf("failed to close body: %v", closeErr)
+		}
+	}()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {

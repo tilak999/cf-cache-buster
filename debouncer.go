@@ -5,6 +5,7 @@ import (
 	"time"
 )
 
+// Debouncer is used to limit the frequency of function execution.
 type Debouncer struct {
 	mu       sync.Mutex
 	timer    *time.Timer

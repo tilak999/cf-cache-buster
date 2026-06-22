@@ -31,11 +31,11 @@ func CreateConfig() *Config {
 
 // HeaderDetectionPlugin a HeaderDetectionPlugin plugin.
 type HeaderDetectionPlugin struct {
-	config       *Config
-	next         http.Handler
-	logger       *log.Logger
-	name         string
-	debouncer    *Debouncer
+	config    *Config
+	next      http.Handler
+	logger    *log.Logger
+	name      string
+	debouncer *Debouncer
 }
 
 // CustomResponseWriter Custom response writer.
